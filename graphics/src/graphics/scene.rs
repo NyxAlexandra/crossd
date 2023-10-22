@@ -1,5 +1,4 @@
 use super::{Layer, Scene};
-use crate::primitive::Quad;
 
 impl Scene {
     /// A new empty scene.
