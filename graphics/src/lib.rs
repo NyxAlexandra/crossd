@@ -45,6 +45,12 @@ pub struct Frame<'pass, T: Target> {
     target: &'pass T,
 }
 
+/// Trait for items that can be drawn.
+pub trait Draw {
+    /// Draw this item.
+    fn draw(frame: &mut Frame<'_, impl Target>, item: Self);
+}
+
 /// A window-backed target.
 pub struct Surface<T: SurfaceTarget> {
     surface: wgpu::Surface,
@@ -78,10 +84,4 @@ pub trait Target {
     fn present(
         &self, // something here, I don't know what yet
     ) -> Result<(), Self::Error>;
-}
-
-/// Trait for items that can be drawn.
-pub trait Draw {
-    /// Draw this item.
-    fn draw(frame: &mut Frame<'_, impl Target>, item: Self);
 }
