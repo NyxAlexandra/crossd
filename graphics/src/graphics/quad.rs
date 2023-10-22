@@ -306,6 +306,6 @@ impl Default for QuadUniforms {
 
 impl Draw for Quad {
     fn draw(frame: &mut Frame<'_, impl Target>, quad: Self) {
-        frame.context.with_mut(|state| state.scene.add_quad(quad))
+        frame.context.with_mut(|state| state.scene.current_mut().add_quad(quad))
     }
 }

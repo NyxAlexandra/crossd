@@ -1,4 +1,4 @@
-use super::Scene;
+use super::{Layer, Scene};
 use crate::primitive::Quad;
 
 impl Scene {
@@ -7,8 +7,13 @@ impl Scene {
         Self::default()
     }
 
-    /// Add a quad to the current layer.
-    pub fn add_quad(&mut self, quad: Quad) {
-        self.scenes[self.current].quads.push(quad)
+    /// The current layer.
+    pub fn current(&self) -> &Layer {
+        &self.scenes[self.current]
+    }
+
+    /// The current layer.
+    pub fn current_mut(&mut self) -> &mut Layer {
+        &mut self.scenes[self.current]
     }
 }
