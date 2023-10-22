@@ -1,12 +1,21 @@
 use std::sync::{Arc, RwLock};
 
+use wgpu::{
+    CommandEncoderDescriptor,
+    Operations,
+    RenderPassColorAttachment,
+    RenderPassDescriptor,
+    TextureAspect,
+    TextureViewDescriptor,
+    TextureViewDimension,
+};
+
 use self::quad::QuadPipeline;
 use crate::backend::{Backend, BackendError};
 use crate::geometry::Rect;
 use crate::primitive::Quad;
 use crate::{Frame, Graphics, Target};
 
-mod canvas;
 mod context;
 mod frame;
 mod layer;
@@ -93,22 +102,45 @@ impl Graphics {
     }
 
     /// Prepare the rendering of a new frame.
-    pub fn prepare<'frame, T: Target>(&mut self, target: &'frame T) -> Frame<'frame, T> {
-        todo!()
+    pub fn prepare<'frame, T: Target>(
+        &mut self,
+        target: &'frame T,
+    ) -> Result<Frame<'frame, T>, T::Error> {
+        let backend = self.backend.clone();
+        let context = self.context.clone();
+
+        let view = target.prepare(TextureViewDescriptor {
+            label: Some("Frame.view"),
+            format: Some(backend.format()),
+            ..Default::default()
+        })?;
+
+        let mut encoder =
+            self.backend.device().create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("Frame.encoder"),
+            });
+        let rpass = encoder.begin_render_pass(&RenderPassDescriptor {
+            label: Some("Frame.rpass"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: Operations { load: todo!(), store: todo!() },
+            })],
+            depth_stencil_attachment: None,
+        });
+
+        Ok(Frame { backend, context, encoder, rpass, target })
     }
 
     /// Render and present the frame.
-    pub fn render<T: Target>(
-        &mut self,
-        frame: Frame<'_, T>,
-    ) -> Result<(), RenderError<T>> {
+    pub fn render<T: Target>(&mut self, frame: Frame<'_, T>) -> Result<(), RenderError> {
         todo!()
     }
 }
 
 /// Errors that can arise while [rendering](Graphics::render).
 #[derive(Debug, thiserror::Error)]
-pub enum RenderError<T: Target> {
-    #[error("target error: {0:?}")]
-    TargetError(T::Error),
+pub enum RenderError {
+    #[error("placeholder")]
+    Placeholder,
 }

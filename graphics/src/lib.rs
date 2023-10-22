@@ -2,10 +2,10 @@
 #![forbid(unsafe_op_in_unsafe_fn)]
 // #![warn(missing_docs)]
 
+use std::cell::RefCell;
 use std::fmt;
 use std::sync::Arc;
 
-use color::Color;
 use geometry::Size2;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 
@@ -55,6 +55,7 @@ pub trait Draw {
 pub struct Surface<T: SurfaceTarget> {
     surface: wgpu::Surface,
     config: wgpu::SurfaceConfiguration,
+    texture: RefCell<Option<wgpu::SurfaceTexture>>,
     target: T,
 }
 
@@ -64,24 +65,20 @@ pub trait SurfaceTarget: HasRawWindowHandle + HasRawDisplayHandle {
     fn size(&self) -> Size2<u32>;
 }
 
-/// A pixel-buffer-backed [target](Target).
-pub struct Canvas {
-    /// Dimensions of the buffer.
-    size: Size2,
-    /// The pixels in the buffer.
-    pixels: Vec<Color>,
-}
-
 /// Trait for item that can be rendered to.
 pub trait Target {
-    /// Error that can arise when presenting.
+    /// Error that can arise when getting this target's texture.
     type Error: fmt::Debug;
 
     /// Size of the drawable area in pixels.
     fn size(&self) -> Size2<u32>;
 
+    /// The texture assosciated with this target.
+    fn prepare(
+        &self,
+        desc: wgpu::TextureViewDescriptor<'_>,
+    ) -> Result<wgpu::TextureView, Self::Error>;
+
     /// Present to this target to be displayed.
-    fn present(
-        &self, // something here, I don't know what yet
-    ) -> Result<(), Self::Error>;
+    fn present(&self);
 }
