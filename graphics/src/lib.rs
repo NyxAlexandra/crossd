@@ -2,6 +2,7 @@
 #![forbid(unsafe_op_in_unsafe_fn)]
 // #![warn(missing_docs)]
 
+use std::fmt;
 use std::sync::Arc;
 
 use color::Color;
@@ -67,11 +68,16 @@ pub struct Canvas {
 
 /// Trait for item that can be rendered to.
 pub trait Target {
+    /// Error that can arise when presenting.
+    type Error: fmt::Debug;
+
     /// Size of the drawable area in pixels.
     fn size(&self) -> Size2<u32>;
 
     /// Present to this target to be displayed.
-    fn present(&self /* something here, I don't know what yet */);
+    fn present(
+        &self, // something here, I don't know what yet
+    ) -> Result<(), Self::Error>;
 }
 
 /// Trait for items that can be drawn.
