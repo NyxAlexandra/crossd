@@ -2,7 +2,8 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use bytemuck::Pod;
 
-/// Trait for numbers usable in [`Mat4`], [`Vec4`], etc.
+/// Trait for numbers usable in [`Mat4`](crate::Mat4), [`Vec4`](crate::Vec4),
+/// etc.
 ///
 /// Implemented for all primitive types.
 pub trait Num:

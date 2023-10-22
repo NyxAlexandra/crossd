@@ -58,7 +58,7 @@ pub trait SurfaceTarget: HasRawWindowHandle + HasRawDisplayHandle {
     fn size(&self) -> Size2<u32>;
 }
 
-/// A pixel-buffer-backed [target](Targetable).
+/// A pixel-buffer-backed [target](Target).
 pub struct Canvas {
     /// Dimensions of the buffer.
     size: Size2,
