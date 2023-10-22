@@ -1,16 +1,17 @@
 use bytemuck::{Pod, Zeroable};
 
 use crate::color::Color;
-use crate::geometry::{Point2, Size2};
+use crate::geometry::{Point2, Rect};
+
+/// Implementations for [`Quad`].
+mod quad;
 
 /// A drawable rectangle.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Pod, Zeroable)]
 pub struct Quad {
-    /// The location of the quad's upper-left corner.
-    pub loc: Point2,
-    /// The size of the quad.
-    pub size: Size2,
+    /// The geometry of the quad.
+    pub rect: Rect,
     /// The color of the quad's fill.
     pub color: Color,
 }
