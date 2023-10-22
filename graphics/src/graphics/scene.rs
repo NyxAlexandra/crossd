@@ -9,11 +9,11 @@ impl Scene {
 
     /// The current layer.
     pub fn current(&self) -> &Layer {
-        &self.scenes[self.current]
+        &self.layers[self.current]
     }
 
     /// The current layer.
     pub fn current_mut(&mut self) -> &mut Layer {
-        &mut self.scenes[self.current]
+        &mut self.layers[self.current]
     }
 }

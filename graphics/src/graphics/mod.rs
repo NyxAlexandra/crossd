@@ -32,7 +32,7 @@ pub struct Inner {
 #[derive(Debug, Default, Clone)]
 pub struct Scene {
     /// Groups of primitives.
-    pub scenes: Vec<Layer>,
+    pub layers: Vec<Layer>,
     /// The current scene.
     pub current: usize,
 }
