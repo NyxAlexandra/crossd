@@ -32,7 +32,6 @@ winit = { version = "0.28", optional = true }
 
 crossd-math.workspace = true
 tracing = { workspace = true, optional = true }
-atomic_refcell = "0.1.13"
 
 [dev-dependencies]
 # for winit-based examples
