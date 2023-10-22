@@ -38,15 +38,6 @@ pub struct RendererBuilder<'a> {
     trace_path: Option<PathBuf>,
 }
 
-/// Errors that can arise from creating a [`Backend`].
-#[derive(Debug, thiserror::Error)]
-pub enum BackendError {
-    #[error("no suitable adapter found for configuration {0}")]
-    NoAdapterFound(String),
-    #[error(transparent)]
-    RequestDeviceError(#[from] RequestDeviceError),
-}
-
 impl Backend {
     /// A new backend with default settings.
     ///
@@ -223,4 +214,13 @@ impl<'a> RendererBuilder<'a> {
             Ok(Backend { instance, adapter, device, queue, format })
         })
     }
+}
+
+/// Errors that can arise from creating a [`Backend`].
+#[derive(Debug, thiserror::Error)]
+pub enum BackendError {
+    #[error("no suitable adapter found for configuration {0}")]
+    NoAdapterFound(String),
+    #[error(transparent)]
+    RequestDeviceError(#[from] RequestDeviceError),
 }
