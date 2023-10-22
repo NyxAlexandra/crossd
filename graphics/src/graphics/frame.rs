@@ -1,5 +1,6 @@
 use wgpu::{CommandEncoder, RenderPass};
 
+use crate::geometry::Size2;
 use crate::{Draw, Frame, Graphics, Target};
 
 impl<'frame, T: Target> Frame<'frame, T> {
@@ -13,6 +14,11 @@ impl<'frame, T: Target> Frame<'frame, T> {
         let context = graphics.context.clone();
 
         Self { backend, context, rpass, encoder, target }
+    }
+
+    /// The size of the drawable area.
+    pub fn size(&self) -> Size2<u32> {
+        self.target.size()
     }
 
     /// Draw an item.
