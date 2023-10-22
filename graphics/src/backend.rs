@@ -27,7 +27,7 @@ pub struct Backend {
     format: TextureFormat,
 }
 
-/// A builder interface for configuring setup of a [`Renderer`].
+/// A builder interface for configuring setup of a [`Backend`].
 pub struct RendererBuilder<'a> {
     format: TextureFormat,
 
@@ -38,32 +38,26 @@ pub struct RendererBuilder<'a> {
     trace_path: Option<PathBuf>,
 }
 
-/// Errors that can arise from creating a [`Renderer`].
+/// Errors that can arise from creating a [`Backend`].
 #[derive(Debug, thiserror::Error)]
-pub enum NewError {
+pub enum BackendError {
     #[error("no suitable adapter found for configuration {0}")]
     NoAdapterFound(String),
     #[error(transparent)]
     RequestDeviceError(#[from] RequestDeviceError),
 }
 
-/// Errors that can occur when rendering.
-#[derive(Debug, thiserror::Error)]
-pub enum RenderError {
-    #[error("idk")]
-    Placeholder,
-}
-
 impl Backend {
     /// A new backend with default settings.
     ///
-    /// See also [`Renderer::builder`].
+    /// See also [`Backend::builder`].
     ///
     /// ## Errors
     ///
     /// See [`NewError`].
-    pub async fn new() -> Result<Self, NewError> {
-        Self::builder().build().await
+    #[must_use]
+    pub fn new() -> Result<Self, BackendError> {
+        Self::builder().build()
     }
 
     /// A new backend using the provided texture format.
@@ -71,8 +65,9 @@ impl Backend {
     /// ## Errors
     ///
     /// See [`NewError`].
-    pub async fn new_using(format: TextureFormat) -> Result<Self, NewError> {
-        Self::builder_using(format).build().await
+    #[must_use]
+    pub fn new_using(format: TextureFormat) -> Result<Self, BackendError> {
+        Self::builder_using(format).build()
     }
 
     /// Return a builder for configuring the backend.
@@ -105,7 +100,7 @@ impl Backend {
         &self.device
     }
 
-    /// A queue of actions to be performed on the gpu.
+    /// A queue of actions to be performed on the GPU.
     #[must_use]
     pub fn queue(&self) -> &Queue {
         &self.queue
@@ -209,25 +204,25 @@ impl<'a> RendererBuilder<'a> {
         Self { trace_path, ..self }
     }
 
-    /// Build the renderer.
+    /// Build the backend.
     ///
     /// ## Errors
     ///
-    /// See [`NewError`].
-    pub async fn build(self) -> Result<Backend, NewError> {
-        use NewError::NoAdapterFound;
+    /// See [`BackendError`].
+    pub fn build(self) -> Result<Backend, BackendError> {
+        pollster::block_on(async {
+            let Self { instance, adapter, device, trace_path, format } = self;
 
-        let Self { instance, adapter, device, trace_path, format } = self;
+            let instance = Instance::new(instance);
+            let adapter = instance
+                .request_adapter(&adapter)
+                .await
+                .ok_or_else(|| BackendError::NoAdapterFound(format!("{:?}", adapter)))?;
 
-        let instance = Instance::new(instance);
-        let adapter = instance
-            .request_adapter(&adapter)
-            .await
-            .ok_or_else(|| NoAdapterFound(format!("{:?}", adapter)))?;
+            let (device, queue) =
+                adapter.request_device(&device, trace_path.as_deref()).await?;
 
-        let (device, queue) =
-            adapter.request_device(&device, trace_path.as_deref()).await?;
-
-        Ok(Backend { instance, adapter, device, queue, format })
+            Ok(Backend { instance, adapter, device, queue, format })
+        })
     }
 }

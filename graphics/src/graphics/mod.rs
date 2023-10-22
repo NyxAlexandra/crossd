@@ -69,17 +69,15 @@ impl Graphics {
     /// # use crossd_graphics::{Graphics, Backend};
     /// # use crossd_graphics::wgpu::PowerPreference;
     /// #
-    /// # async fn run() -> anyhow::Result<()> {
-    /// let backend = Backend::builder()
-    ///     .power_preference(PowerPreference::HighPerformance)
-    ///     .build()
-    ///     .await?;
+    /// # fn run() -> anyhow::Result<()> {
+    /// let backend =
+    ///     Backend::builder().power_preference(PowerPreference::HighPerformance).build()?;
     /// let graphics = Graphics::with(backend);
     /// #
     /// #     Ok(())
     /// # }
     /// #
-    /// # pollster::block_on(run());
+    /// # run();
     /// ```
     pub fn with(backend: Backend) -> Self {
         let backend = Arc::new(backend);
