@@ -7,7 +7,7 @@ use crate::backend::Backend;
 impl Context {
     /// Initializes drawing state.
     pub fn new(backend: &Backend) -> Self {
-        let quad = QuadPipeline::new(&backend);
+        let quad = QuadPipeline::new(backend);
         let scene = Scene::new();
 
         Self { inner: RwLock::new(Inner { quad, scene }) }

@@ -55,7 +55,6 @@ impl Backend {
     /// ## Errors
     ///
     /// See [`NewError`].
-    #[must_use]
     pub fn new() -> Result<Self, BackendError> {
         Self::builder().build()
     }
@@ -65,7 +64,6 @@ impl Backend {
     /// ## Errors
     ///
     /// See [`NewError`].
-    #[must_use]
     pub fn new_using(format: TextureFormat) -> Result<Self, BackendError> {
         Self::builder_using(format).build()
     }

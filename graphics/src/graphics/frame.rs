@@ -1,6 +1,6 @@
 use wgpu::{CommandEncoder, RenderPass};
 
-use crate::geometry::{Point2, Rect, Size2};
+use crate::geometry::{Rect, Size2};
 use crate::{Draw, Frame, Graphics, Target};
 
 impl<'frame, T: Target> Frame<'frame, T> {
