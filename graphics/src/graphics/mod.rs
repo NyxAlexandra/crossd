@@ -1,17 +1,19 @@
 use std::sync::{Arc, RwLock};
 
-use wgpu::{CommandEncoderDescriptor, RenderPass, SurfaceError};
-
 use self::quad::QuadPipeline;
-use crate::backend::{Backend, NewError, RenderError};
+use crate::backend::{Backend, BackendError};
 use crate::geometry::Rect;
 use crate::primitive::Quad;
-use crate::{Draw, Frame, Graphics, Target};
+use crate::{Frame, Graphics, Target};
 
 mod canvas;
+mod context;
+mod frame;
+mod layer;
+/// Quad render pipeline.
 mod quad;
+mod scene;
 mod surface;
-mod triangle;
 
 /// Shared drawing state.
 pub struct Context {
@@ -57,8 +59,8 @@ impl Graphics {
     /// # }
     /// # run();
     /// ```
-    pub fn new() -> Result<Self, NewError> {
-        pollster::block_on(Backend::new()).map(Self::with)
+    pub fn new() -> Result<Self, BackendError> {
+        Backend::new().map(Self::with)
     }
 
     /// A graphics backend using the provided backend.
@@ -98,70 +100,17 @@ impl Graphics {
     }
 
     /// Render and present the frame.
-    pub fn render<T: Target>(&mut self, frame: Frame<'_, T>) -> Result<(), RenderError> {
+    pub fn render<T: Target>(
+        &mut self,
+        frame: Frame<'_, T>,
+    ) -> Result<(), RenderError<T>> {
         todo!()
     }
 }
 
-impl Context {
-    /// Initializes drawing state.
-    pub fn new(backend: &Backend) -> Self {
-        let quad = QuadPipeline::new(&backend);
-        let scene = Scene::default();
-
-        Self { inner: RwLock::new(Inner { quad, scene }) }
-    }
-
-    /// With [`&Inner`](Inner).
-    pub fn with<R>(&self, f: impl FnOnce(&Inner) -> R) -> R {
-        f(&self.inner.read().unwrap())
-    }
-
-    /// With [`&mut Inner`](Inner).
-    pub fn with_mut<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
-        f(&mut self.inner.write().unwrap())
-    }
-}
-
-impl<'frame, T: Target> Frame<'frame, T> {
-    fn new(graphics: &Graphics, rpass: RenderPass<'frame>, target: &'frame T) -> Self {
-        let backend = graphics.backend.clone();
-        let context = graphics.context.clone();
-        let encoder = graphics
-            .backend
-            .device()
-            .create_command_encoder(&CommandEncoderDescriptor::default());
-
-        Self { backend, context, rpass, encoder, target }
-    }
-
-    /// Draw an item.
-    pub fn draw(&mut self, item: impl Draw) {
-        Draw::draw(self, item)
-    }
-}
-
-impl Scene {
-    /// A new empty scene.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Add a quad to the current layer.
-    pub fn add_quad(&mut self, quad: Quad) {
-        self.scenes[self.current].quads.push(quad)
-    }
-}
-
-impl Layer {
-    /// Create a new empty layer with the given clip bounds.
-    pub fn new(bounds: Rect<u32>) -> Self {
-        Self { bounds, quads: Vec::new() }
-    }
-}
-
+/// Errors that can arise while [rendering](Graphics::render).
 #[derive(Debug, thiserror::Error)]
-pub enum PresentError {
-    #[error(transparent)]
-    SurfaceError(#[from] SurfaceError),
+pub enum RenderError<T: Target> {
+    #[error("target error: {0:?}")]
+    TargetError(T::Error),
 }

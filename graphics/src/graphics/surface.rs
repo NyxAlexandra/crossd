@@ -38,11 +38,13 @@ impl<T: SurfaceTarget> Surface<T> {
 }
 
 impl<T: SurfaceTarget> Target for Surface<T> {
+    type Error = wgpu::SurfaceError;
+
     fn size(&self) -> Size2<u32> {
         self.target.size()
     }
 
-    fn present(&self) {
+    fn present(&self) -> Result<(), wgpu::SurfaceError> {
         todo!()
     }
 }
