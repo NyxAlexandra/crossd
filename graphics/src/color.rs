@@ -95,6 +95,9 @@ impl Color {
     /// ```
     #[must_use]
     pub const fn to_hex(self) -> u32 {
+        // my beloved function
+        //
+        // this is so cool
         unsafe { mem::transmute(self) }
     }
 
@@ -110,6 +113,42 @@ impl Color {
     #[must_use]
     pub const fn from_hex(hex: u32) -> Self {
         unsafe { mem::transmute(hex) }
+    }
+
+    /// Convert to [Wgpu's color type](wgpu::Color).
+    ///
+    /// ```
+    /// # use crossd_graphics::color::Color;
+    /// #
+    /// assert_eq!(Color::WHITE.to_wgpu(), wgpu::Color::WHITE);
+    /// ```
+    #[must_use]
+    pub fn to_wgpu(self) -> wgpu::Color {
+        wgpu::Color {
+            r: (self.r as f64) / 255.0,
+            g: (self.g as f64) / 255.0,
+            b: (self.b as f64) / 255.0,
+            a: (self.a as f64) / 255.0,
+        }
+    }
+
+    /// Convert from [Wgpu's color type](wgpu::Color).
+    ///
+    /// ```
+    /// # use crossd_graphics::color::Color;
+    /// #
+    /// let white = wgpu::Color::WHITE;
+    ///
+    /// assert_eq!(Color::from_wgpu(white), Color::WHITE);
+    /// ```
+    #[must_use]
+    pub fn from_wgpu(wgpu: wgpu::Color) -> Self {
+        Self::new(
+            (wgpu.r * 255.0) as _,
+            (wgpu.g * 255.0) as _,
+            (wgpu.b * 255.0) as _,
+            (wgpu.a * 255.0) as _,
+        )
     }
 }
 
