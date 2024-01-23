@@ -3,6 +3,7 @@ use std::mem::ManuallyDrop;
 use bytemuck::{Pod, Zeroable};
 
 use super::Vec2;
+use crate::Zero;
 
 /// A union for casting between different representations of a [`Vec2`].
 #[repr(C)]
@@ -59,6 +60,10 @@ impl<T: Copy> Vec2<T> {
     pub const fn splat(v: T) -> Self {
         Self { x: v, y: v }
     }
+}
+
+impl<T: Zero> Vec2<T> {
+    pub const ZERO: Self = Self::splat(T::ZERO);
 }
 
 unsafe impl<T: Pod> Pod for Vec2<T> {}

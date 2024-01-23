@@ -11,15 +11,15 @@ edition.workspace = true
 repository.workspace = true
 
 [features]
-default = ["trace", "winit"]
+default = ["trace", "winit", "serde"]
 #! Enable logging via [`tracing`](https://docs.rs/tracing).
 trace = ["dep:tracing"]
 #! Implement `SurfaceTarget` for `winit::window::Window`.
 winit = ["dep:winit"]
+#! Implement serializiation, mostly for scene types.
+serde = ["dep:serde"]
 
 [dependencies]
-# serialization to&from bytes
-bytemuck = { version = "1.14.0", features = ["derive"] }
 # Wgpu text rendering
 glyphon = { git = "https://github.com/grovesNL/glyphon", rev = "1de354c", version = "0.3.0" }
 raw-window-handle = "0.5.2"
@@ -27,15 +27,22 @@ thiserror = "1.0.47"
 wgpu = { version = "0.17.1", features = ["trace"] }
 # when an async runtime isn't wanted (like in examples)
 pollster = "0.3"
+
 # winit impl
 winit = { version = "0.28", optional = true }
 
 crossd-math.workspace = true
+crossd-scene.workspace = true
+
+bytemuck.workspace = true
+serde = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
+bitflags = { workspace = true, features = ["bytemuck"] }
 
 [dev-dependencies]
 # for winit-based examples
 winit = "0.28"
+
 # even if the `trace` feature is disabled, Wgpu requires
-# logging to be enabled else Wgpu fails to run.
+# logging to be enabled, else Wgpu fails to run.
 tracing-subscriber.workspace = true

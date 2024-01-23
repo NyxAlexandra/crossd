@@ -24,11 +24,12 @@ pub struct Backend {
     adapter: Adapter,
     device: Device,
     queue: Queue,
+
     format: TextureFormat,
 }
 
 /// A builder interface for configuring setup of a [`Backend`].
-pub struct RendererBuilder<'a> {
+pub struct BackendBuilder<'a> {
     format: TextureFormat,
 
     instance: InstanceDescriptor,
@@ -61,14 +62,14 @@ impl Backend {
 
     /// Return a builder for configuring the backend.
     #[must_use]
-    pub fn builder<'a>() -> RendererBuilder<'a> {
+    pub fn builder<'a>() -> BackendBuilder<'a> {
         Self::builder_using(TextureFormat::Rgba8UnormSrgb)
     }
 
     /// Returns a builder using the provided texture format.
     #[must_use]
-    pub fn builder_using<'a>(format: TextureFormat) -> RendererBuilder<'a> {
-        RendererBuilder::new(format)
+    pub fn builder_using<'a>(format: TextureFormat) -> BackendBuilder<'a> {
+        BackendBuilder::new(format)
     }
 
     /// The instance of Wgpu.
@@ -102,7 +103,7 @@ impl Backend {
     }
 }
 
-impl<'a> RendererBuilder<'a> {
+impl<'a> BackendBuilder<'a> {
     #[must_use]
     pub fn new(format: TextureFormat) -> Self {
         let instance = InstanceDescriptor::default();

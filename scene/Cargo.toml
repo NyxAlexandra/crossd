@@ -1,5 +1,5 @@
 [package]
-name = "crossd-math"
+name = "crossd-scene"
 
 authors.workspace = true
 license.workspace = true
@@ -9,12 +9,9 @@ edition.workspace = true
 repository.workspace = true
 
 [features]
-default = ["serde"]
-#! Serializiation for all math types.
 serde = ["dep:serde"]
 
 [dependencies]
-bytemuck = "1.14.0"
-mint = "0.5.9"
-
+crossd-math.workspace = true
+bytemuck.workspace = true
 serde = { workspace = true, optional = true }

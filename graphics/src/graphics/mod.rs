@@ -1,60 +1,55 @@
-use std::sync::{Arc, RwLock};
-
+use crossd_math::Size2;
 use wgpu::{
-    CommandEncoderDescriptor,
-    Operations,
-    RenderPassColorAttachment,
-    RenderPassDescriptor,
-    TextureAspect,
-    TextureViewDescriptor,
-    TextureViewDimension,
+    Extent3d,
+    ImageCopyTexture,
+    Texture,
+    TextureDescriptor,
+    TextureDimension,
+    TextureUsages,
+    TextureView,
 };
 
-use self::quad::QuadPipeline;
+use self::rasterize::RasterizePipeline;
 use crate::backend::{Backend, BackendError};
-use crate::geometry::Rect;
-use crate::primitive::Quad;
-use crate::{Frame, Graphics, Target};
+use crate::encoding::Encoding;
+use crate::scene::Scene;
 
-mod context;
-mod frame;
-mod layer;
-/// Quad render pipeline.
-mod quad;
-mod scene;
-mod surface;
+mod rasterize;
+pub mod surface;
 
-/// Shared drawing state.
-pub struct Context {
-    inner: RwLock<Inner>,
+/// A renderer.
+pub struct Graphics {
+    backend: Backend,
+    output: Texture,
+    view: TextureView,
+
+    scene: Scene,
+    /// has scene been edited since last render?
+    dirty: bool,
+
+    encoding: Encoding,
+    pipeline: Pipeline,
 }
 
-/// Inner [`Context`].
-pub struct Inner {
-    /// Pipeline for rendering colored "quads" (rectangles).
-    pub quad: QuadPipeline,
-    /// "Scene Graph".
-    pub scene: Scene,
+struct Pipeline {
+    rasterize: RasterizePipeline,
 }
 
-/// A collection of [`Layer`]s.
-#[derive(Debug, Default, Clone)]
-pub struct Scene {
-    /// Groups of primitives.
-    pub layers: Vec<Layer>,
-    /// The current scene.
-    pub current: usize,
-}
+/// Trait for item that can be rendered to.
+pub trait RenderTarget {
+    /// Prepare for a new frame.
+    ///
+    /// This is where [`Graphics::resize`] should be called, if necessary.
+    fn prepare(&mut self, graphics: &mut Graphics);
 
-/// A group of primitives.
-#[derive(Debug, Default, Clone)]
-pub struct Layer {
-    /// Clip bounds.
-    pub bounds: Rect<u32>,
-    /// Quads in this layer.
-    pub quads: Vec<Quad>,
-}
+    /// Any special logic can be called here, if necessary.
+    fn render(&mut self, graphics: &mut Graphics) {
+        graphics.render()
+    }
 
+    /// Present to this target to be displayed.
+    fn present(&mut self, graphics: &Graphics);
+}
 impl Graphics {
     /// Create a new renderer.
     ///
@@ -89,58 +84,53 @@ impl Graphics {
     /// # run();
     /// ```
     pub fn with(backend: Backend) -> Self {
-        let backend = Arc::new(backend);
-        let context = Arc::new(Context::new(&backend));
+        let size = Size2::default();
+        let texture = backend.device().create_texture(&TextureDescriptor {
+            label: Some("Graphics.output"),
+            size: { Extent3d { width: size.w, height: size.h, ..Default::default() } },
+            format: backend.format(),
+            usage: TextureUsages::STORAGE_BINDING
+                | TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_SRC
+                | TextureUsages::COPY_DST,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            view_formats: &[],
+        });
 
-        Self { backend, context }
+        todo!()
     }
 
-    /// Any changes to the internal state of the backend may cause issues.
-    /// Stability across different version of the library is not guaranteed.
+    /// The [Wgpu backend](Backend).
     pub fn backend(&self) -> &Backend {
         &self.backend
     }
 
-    /// Prepare the rendering of a new frame.
-    pub fn prepare<'frame, T: Target>(
-        &mut self,
-        target: &'frame T,
-    ) -> Result<Frame<'frame, T>, T::Error> {
-        let backend = self.backend.clone();
-        let context = self.context.clone();
+    /// The current size of the viewport.
+    pub fn size(&self) -> Size2 {
+        let Extent3d { width, height, .. } = self.output.size();
 
-        let view = target.prepare(TextureViewDescriptor {
-            label: Some("Frame.view"),
-            format: Some(backend.format()),
-            ..Default::default()
-        })?;
-
-        let mut encoder =
-            self.backend.device().create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Frame.encoder"),
-            });
-        let rpass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: Some("Frame.rpass"),
-            color_attachments: &[Some(RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: Operations { load: todo!(), store: todo!() },
-            })],
-            depth_stencil_attachment: None,
-        });
-
-        Ok(Frame { backend, context, encoder, rpass, target })
+        Size2::new(width, height)
     }
 
-    /// Render and present the frame.
-    pub fn render<T: Target>(&mut self, frame: Frame<'_, T>) -> Result<(), RenderError> {
+    /// Resize the viewport.
+    pub fn resize(&mut self, size: Size2) {
         todo!()
     }
-}
 
-/// Errors that can arise while [rendering](Graphics::render).
-#[derive(Debug, thiserror::Error)]
-pub enum RenderError {
-    #[error("placeholder")]
-    Placeholder,
+    /// The output texture.
+    pub fn output(&self) -> &Texture {
+        &self.output
+    }
+
+    /// Prepare for rendering a new frame.
+    pub fn prepare(&mut self) {
+        todo!()
+    }
+
+    /// Render to the current texture.
+    pub fn render(&mut self) {
+        todo!()
+    }
 }

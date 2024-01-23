@@ -2,12 +2,19 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use bytemuck::Pod;
 
+use self::impls::Sealed;
+
 /// Trait for numbers usable in [`Mat4`](crate::Mat4), [`Vec4`](crate::Vec4),
 /// etc.
 ///
 /// Implemented for all primitive types.
 pub trait Num:
-    Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> + Pod
+    Sealed
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + Pod
 {
 }
 
@@ -18,11 +25,11 @@ pub trait Float: Num {
     /// The integer type that can store this float.
     type Int;
 
-    /// Round the decimal, becoming an integer.
-    fn round(self) -> Self::Int;
+    /// Round the decimal, remaining a float.
+    fn round(self) -> Self;
 
-    /// Round the decimal but remain a float.
-    fn snap(self) -> Self;
+    /// Round the decimal and convert to an integer.
+    fn snap(self) -> Self::Int;
 }
 
 /// Traits for [`Num`] types that allow assignment.
@@ -66,12 +73,30 @@ pub trait Min: Num {
     const MIN: Self;
 }
 
-// I'm proud of these macros :D
+/// Numbers with an infinity value.
+pub trait Infinity: Num {
+    /// Representation of infinity.
+    const INFINITY: Self;
+}
 
-macro_rules! impl_num {
+/// Numbers with a negative infinity value.
+pub trait NegInfinity: Num {
+    /// Representation of negative infinity.
+    const NEG_INFINITY: Self;
+}
+
+mod impls {
+    use super::*;
+
+    pub trait Sealed {}
+
+    // I'm proud of these macros :D
+
+    macro_rules! impl_num {
     ($($ty:ident),*) => {
         $(
             impl Num for $ty {}
+            impl Sealed for $ty {}
             impl NumAssign for $ty {}
 
             impl Max for $ty {
@@ -84,7 +109,7 @@ macro_rules! impl_num {
     };
 }
 
-macro_rules! impl_uint {
+    macro_rules! impl_uint {
     ($($ty:ident),*) => {
         $(
             impl_num!($ty);
@@ -99,7 +124,7 @@ macro_rules! impl_uint {
     };
 }
 
-macro_rules! impl_int {
+    macro_rules! impl_int {
     ($($ty:ident),*) => {
         $(
             impl_uint!($ty);
@@ -111,7 +136,7 @@ macro_rules! impl_int {
     };
 }
 
-macro_rules! impl_float {
+    macro_rules! impl_float {
     ($($ty:ident),*) => {
         $(
             impl_num!($ty);
@@ -125,34 +150,41 @@ macro_rules! impl_float {
             impl NegOne for $ty {
                 const NEG_ONE: Self = -1.0;
             }
+            impl Infinity for $ty {
+                const INFINITY: Self = <$ty>::INFINITY;
+            }
+            impl NegInfinity for $ty {
+                const NEG_INFINITY: Self = <$ty>::NEG_INFINITY;
+            }
         )*
     };
 }
 
-impl_int![i8, i16, i32, i64, i128, isize];
-impl_uint![u8, u16, u32, u64, u128, usize];
-impl_float![f32, f64];
+    impl_int![i8, i16, i32, i64, i128, isize];
+    impl_uint![u8, u16, u32, u64, u128, usize];
+    impl_float![f32, f64];
 
-impl Float for f32 {
-    type Int = i32;
+    impl Float for f32 {
+        type Int = i32;
 
-    fn round(self) -> Self::Int {
-        self.snap() as _
+        fn round(self) -> Self {
+            Self::round(self)
+        }
+
+        fn snap(self) -> Self::Int {
+            Float::round(self) as _
+        }
     }
 
-    fn snap(self) -> Self {
-        <f32>::round(self)
-    }
-}
+    impl Float for f64 {
+        type Int = i64;
 
-impl Float for f64 {
-    type Int = i64;
+        fn round(self) -> Self {
+            Self::round(self)
+        }
 
-    fn round(self) -> Self::Int {
-        <f64>::round(self) as _
-    }
-
-    fn snap(self) -> Self {
-        todo!()
+        fn snap(self) -> Self::Int {
+            Float::round(self) as _
+        }
     }
 }

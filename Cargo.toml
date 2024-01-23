@@ -12,7 +12,18 @@ repository = "https://github.com/NyxAlexandra/crossd"
 
 [workspace.dependencies]
 crossd-math = { path = "./math" }
+crossd-scene = { path = "./scene" }
 crossd-graphics = { path = "./graphics" }
 
+bitflags = "2.4"
+bytemuck = { version = "1.14.0", features = ["derive"] }
+serde = { version = "1.0.189", features = ["rc"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3"
+
+[profile.release.build-override]
+opt-level = 3
+codegen-units = 16
+
+[profile.dev.build-override]
+opt-level = 3

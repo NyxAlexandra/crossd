@@ -16,15 +16,12 @@ use wgpu::{
     Queue,
 };
 
+use super::next_copy_size;
+
 pub struct GpuBuf<T> {
     buffer: Buffer,
-    /// Label for the buffer.
-    ///
-    /// Used when reallocating it.
     label: Option<String>,
-    /// Capacity of the buffer.
     cap: usize,
-    /// Amount of items.
     len: usize,
 
     _ty: PhantomData<T>,
@@ -122,12 +119,4 @@ impl<T: Pod> GpuBuf<T> {
             self.cap = new as _;
         }
     }
-}
-
-// from <https://github.com/iced-rs/iced/blob/0770e7eaf842021a4b15b00e1b81ba10dd9b8140/wgpu/src/buffer.rs#L99C1-L99C1>
-fn next_copy_size<T>(len: usize) -> u64 {
-    let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
-
-    (((mem::size_of::<T>() * len).next_power_of_two() as u64 + align_mask) & !align_mask)
-        .max(wgpu::COPY_BUFFER_ALIGNMENT)
 }

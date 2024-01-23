@@ -1,28 +1,10 @@
-use std::fmt;
 use std::mem::ManuallyDrop;
-use std::ops::{
-    Add,
-    AddAssign,
-    Deref,
-    DerefMut,
-    Div,
-    DivAssign,
-    Mul,
-    MulAssign,
-    Sub,
-    SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use bytemuck::{Pod, Zeroable};
 use mint::IntoMint;
 
 use super::{Max, Min, NegOne, Num, One, Vec4, Zero};
-
-impl<T: fmt::Display> fmt::Display for Vec4<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[ {} {} {} {} ]", self.x, self.y, self.z, self.w)
-    }
-}
 
 /// A union for casting between different representations of a [`Vec4`].
 #[repr(C)]
@@ -237,20 +219,6 @@ impl<T: Num> DivAssign for Vec4<T> {
 // conversions
 // -----------
 
-impl<T> Deref for Vec4<T> {
-    type Target = [T; 4];
-
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const Self).cast() }
-    }
-}
-
-impl<T> DerefMut for Vec4<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self as *mut Self).cast() }
-    }
-}
-
 impl<T> IntoMint for Vec4<T> {
     type MintType = mint::Vector4<T>;
 }
@@ -289,13 +257,5 @@ mod test {
 
         assert_eq!(Vec4::from_array(array).to_array(), array);
         assert_eq!(Vec4::from_tuple(tuple).to_tuple(), tuple);
-    }
-
-    #[test]
-    fn fmt() {
-        let vec4 = Vec4::splat(0);
-        let string = "[ 0 0 0 0 ]";
-
-        assert_eq!(vec4.to_string(), string);
     }
 }
