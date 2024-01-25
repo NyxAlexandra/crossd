@@ -3,13 +3,13 @@ use std::ops::Div;
 use bytemuck::{Pod, Zeroable};
 
 use super::{Point2, Rect};
-use crate::{Num, Size2};
+use crate::{Num, Size2, Zero};
 
-impl<T: Num, U: Num> Rect<T, U> {
+impl<T: Num> Rect<T> {
     /// A new rectangle.
     #[inline]
     #[must_use]
-    pub const fn new(loc: Point2<T>, size: Size2<U>) -> Self {
+    pub const fn new(loc: Point2<T>, size: Size2<T>) -> Self {
         Self { loc, size }
     }
 }
@@ -24,6 +24,13 @@ impl<T: Num> Rect<T> {
 
     pub fn map<U: Num>(self, f: impl Fn(T) -> U) -> Rect<U> {
         Rect::new(self.loc.map(&f), self.size.map(&f))
+    }
+
+    pub fn from_size(size: Size2<T>) -> Self
+    where
+        T: Zero,
+    {
+        size.to_rect()
     }
 }
 

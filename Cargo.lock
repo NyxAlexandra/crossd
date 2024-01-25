@@ -362,7 +362,6 @@ dependencies = [
  "crossd-math",
  "crossd-scene",
  "indexmap 2.1.0",
- "morphorm",
  "slotmap",
  "tiny-skia 0.11.3",
 ]
@@ -887,15 +886,6 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "morphorm"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "618fb979b26c8898ae0ed4677ca01385b0588bd4a27a8b2d3d9795f468e33366"
-dependencies = [
- "smallvec",
 ]
 
 [[package]]

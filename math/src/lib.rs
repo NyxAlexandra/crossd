@@ -205,7 +205,7 @@ pub struct Vec2<T = f32> {
 
 /// A point in 2 dimensions.
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Point2<T = f32> {
     pub x: T,
@@ -214,16 +214,16 @@ pub struct Point2<T = f32> {
 
 /// A rectangle defined by it's location and size.
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Rect<T = f32, U = T> {
+pub struct Rect<T = f32> {
     pub loc: Point2<T>,
-    pub size: Size2<U>,
+    pub size: Size2<T>,
 }
 
 /// A size in 2 dimensions.
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Size2<T = u32> {
     pub w: T,
@@ -247,7 +247,7 @@ pub const fn vec4<T: Num>(x: T, y: T, z: T, w: T) -> Vec4<T> {
 /// Shorthand for [`Rect::new`].
 #[inline]
 #[must_use]
-pub const fn rect<T: Num, U: Num>(loc: Point2<T>, size: Size2<U>) -> Rect<T, U> {
+pub const fn rect<T: Num>(loc: Point2<T>, size: Size2<T>) -> Rect<T> {
     Rect::new(loc, size)
 }
 

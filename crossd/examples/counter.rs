@@ -1,19 +1,16 @@
 fn main() {}
 
-// use crossd::widget::{column, text, row, button}:
-//
-// fn main() -> crossd::Result {
-// crossd::launch(|rt| {
-// let (count, set_count) = rt.create_signals(0);
-//
-// column((
-// text(|| format!("count: {}", count.get())),
-// row((
-// button(text(|| "+"))
-// .on_press(move || set_count.update(|count| count += 1)),
-// button(text(|| "-"))
-// .on_press(move || set_count.update(|count| count -= 1)),
-// )),
-// ))
-// })
+// use crossd::signal::Signal;
+// use crossd::widget::{Button, Column, Text};
+
+// fn main() {
+//     crossd::launch(|| {
+//         let count = Signal::new(0);
+
+//         Column::new((
+//             Button::text((|| "+")).on_press(move || count.update(|count|
+// count += 1)),             Text::new(|| format!("count: {}", count.get())),
+//             Button::text(|| "-").on_press(move || count.update(|count| count
+// -= 1)),         ))
+//     })
 // }

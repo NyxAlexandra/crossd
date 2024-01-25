@@ -1,63 +1,43 @@
-use crossd_math::{Point2, Size2};
+use crossd_math::{Point2, Rect, Size2};
 use crossd_scene::{Fill, Image, Path, Stroke};
 
 use crate::graphics::Renderer;
+use crate::layout::Dim2;
 
 pub mod canvas;
+pub mod label;
 
 pub trait Widget {
-    fn children(&self) -> Vec<Element>;
+    /// (Possibly)-relative dimensions of this widget.
+    fn dimensions(&self) -> Dim2;
 
-    fn layout(&mut self, bounds: Size2) -> Size2;
-
-    fn paint(&mut self, cx: &mut Painter);
-}
-
-/// A generic widget.
-pub struct Element {
-    widget: Box<dyn Widget>,
+    /// Draw this widget.
+    fn paint(&self, cx: &mut PaintCx, bounds: Rect<u32>);
 }
 
 pub struct Cx {
-    window_size: Size2,
-    fullscreen: bool,
-}
-
-pub struct Painter {
     renderer: Box<dyn Renderer>,
 }
 
-impl Element {
-    pub fn new(widget: impl Widget + 'static) -> Self {
-        Self { widget: Box::new(widget) }
-    }
-
-    pub fn widget(&self) -> &dyn Widget {
-        self.widget.as_ref()
-    }
-
-    pub fn widget_mut(&mut self) -> &mut dyn Widget {
-        self.widget.as_mut()
-    }
+pub struct PaintCx<'a> {
+    renderer: &'a mut dyn Renderer,
+    bounds: Rect<u32>,
+    window: Size2,
 }
 
-impl Widget for Element {
-    fn children(&self) -> Vec<Element> {
-        self.widget.children()
+impl<'a> PaintCx<'a> {
+    pub(crate) fn new(renderer: &'a mut impl Renderer, window: Size2) -> Self {
+        Self { renderer, bounds: window.to_rect(), window }
     }
 
-    fn layout(&mut self, bounds: Size2) -> Size2 {
-        self.widget.layout(bounds)
-    }
+    pub fn paint(&mut self, widget: &impl Widget) {
+        let bounds = self.bounds;
 
-    fn paint(&mut self, cx: &mut Painter) {
-        self.widget.paint(cx)
-    }
-}
+        self.bounds = widget.dimensions().resolve(bounds.size).to_rect();
 
-impl Painter {
-    pub(crate) fn new(renderer: impl Renderer + 'static) -> Self {
-        Self { renderer: Box::new(renderer) }
+        widget.paint(self, bounds);
+
+        self.bounds = bounds;
     }
 
     pub fn stroke(&mut self, path: impl Into<Path>, stroke: Stroke) {
@@ -73,7 +53,7 @@ impl Painter {
     }
 }
 
-impl Renderer for Painter {
+impl<'a> Renderer for PaintCx<'a> {
     fn stroke(&mut self, path: Path, stroke: Stroke) {
         self.stroke(path, stroke)
     }

@@ -3,7 +3,7 @@ use std::ops::Div;
 use bytemuck::{Pod, Zeroable};
 
 use super::Size2;
-use crate::{Num, One, Zero};
+use crate::{Num, One, Point2, Rect, Zero};
 
 impl<T> Size2<T> {
     #[must_use]
@@ -19,45 +19,46 @@ impl<T> Size2<T> {
 
 impl<T: Num> Size2<T> {
     #[must_use]
-    #[inline(always)]
     pub const fn splat(v: T) -> Self {
         Self { w: v, h: v }
     }
 
-    #[inline]
     #[must_use]
     pub fn extend(self, size: Self) -> Self {
         Self::new(self.w + size.w, self.h + size.h)
     }
 
-    #[inline]
     #[must_use]
     pub fn extend_width(self, w: T) -> Self {
         Self::new(self.w + w, self.h)
     }
 
-    #[inline]
     #[must_use]
     pub fn extend_height(self, h: T) -> Self {
         Self::new(self.w, self.h + h)
     }
 
-    #[inline]
     #[must_use]
     pub fn reduce(self, size: Self) -> Self {
         Self::new(self.w - size.w, self.h - size.h)
     }
 
-    #[inline]
     #[must_use]
     pub fn reduce_width(self, w: T) -> Self {
         Self::new(self.w - w, self.h)
     }
 
-    #[inline]
     #[must_use]
     pub fn reduce_height(self, h: T) -> Self {
         Self::new(self.w, self.h - h)
+    }
+
+    #[must_use]
+    pub fn to_rect(self) -> Rect<T>
+    where
+        T: Zero,
+    {
+        Rect::new(Point2::ZERO, self)
     }
 }
 
