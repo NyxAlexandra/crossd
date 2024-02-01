@@ -1,170 +1,329 @@
 use std::any::Any;
-use std::cell::RefCell;
-use std::hash::Hash;
+use std::cell::{Cell, RefCell};
+use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
-use std::{mem, ptr};
-
-use slotmap::{new_key_type, SlotMap};
 
 thread_local! {
     static RUNTIME: Runtime = Runtime::new();
 }
 
-/// The reactive runtime system data.
-pub struct Runtime {
-    values: RefCell<SlotMap<ValueId, Node>>,
-}
-
-struct Node {
-    val: Box<RefCell<dyn Any>>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Signal<T> {
-    id: ValueId,
+    id: SignalId,
     _ty: PhantomData<*mut T>,
 }
 
-new_key_type! {
-    struct ValueId;
-}
-
-impl Runtime {
-    fn new() -> Self {
-        Self { values: RefCell::default() }
-    }
-
-    /// Ensure initialization of the reactive runtime.
-    pub fn init() {
-        RUNTIME.with(|rt| _ = &*rt);
-    }
-
-    /// Drop all current signal values, re-initializing the reactive runtime.
-    /// It is safe to create new signals after this point.
-    ///
-    /// ## Safety
-    ///
-    /// All existing signals on the thread must be dropped or never used after
-    /// this is called.
-    pub unsafe fn dispose() {
-        RUNTIME.with(|rt| {
-            let mut new = Self::new();
-
-            ptr::swap(&mut new, rt as *const _ as *mut Self);
-
-            // old is dropped
-        });
-    }
-
-    fn signal<T: 'static>(&self, val: T) -> Signal<T> {
-        let id = self.values.borrow_mut().insert(Node::new(val));
-
-        Signal { id, _ty: PhantomData }
-    }
-
-    fn get<T: Clone + 'static>(&self, id: ValueId) -> T {
-        self.values.borrow().get(id).map(|node| node.get()).unwrap()
-    }
-
-    fn with<T: 'static, R>(&self, id: ValueId, f: impl FnOnce(&T) -> R) -> R {
-        self.values.borrow().get(id).map(|node| node.with(f)).unwrap()
-    }
-
-    fn set<T: 'static>(&self, id: ValueId, val: T) {
-        self.values.borrow().get(id).map(|node| node.set(val));
-    }
-
-    fn update<T: 'static>(&self, id: ValueId, f: impl FnOnce(&mut T)) {
-        self.values.borrow().get(id).map(|node| node.update(f));
+impl<T> Clone for Signal<T> {
+    fn clone(&self) -> Self {
+        *self
     }
 }
 
-impl Node {
-    pub fn new<T: 'static>(val: T) -> Self {
-        Self { val: Box::new(RefCell::new(val)) }
-    }
+impl<T> Copy for Signal<T> {}
 
-    pub fn get<T: Clone + 'static>(&self) -> T {
-        self.val.borrow().downcast_ref().cloned().unwrap()
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Effect {
+    id: EffectId,
+}
 
-    pub fn with<T: 'static, R>(&self, f: impl FnOnce(&T) -> R) -> R {
-        self.val.borrow().downcast_ref().map(f).unwrap()
-    }
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Memo<T> {
+    signal: Signal<Option<T>>,
+    effect: Effect,
+}
 
-    pub fn set<T: 'static>(&self, val: T) {
-        *self.val.borrow_mut().downcast_mut().unwrap() = val;
+impl<T> Clone for Memo<T> {
+    fn clone(&self) -> Self {
+        *self
     }
+}
 
-    pub fn update<T: 'static, R>(&self, f: impl FnOnce(&mut T) -> R) -> R {
-        f(&mut self.val.borrow_mut().downcast_mut().unwrap())
-    }
+impl<T> Copy for Memo<T> {}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SignalId {
+    val: u64,
+}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct EffectId {
+    val: u64,
+}
+
+struct Runtime {
+    scope: RefCell<Scope>,
+
+    signals: RefCell<HashMap<SignalId, SignalNode>>,
+    effects: RefCell<HashMap<EffectId, EffectNode>>,
+
+    next_id: Cell<u64>,
+}
+
+struct Scope {
+    current: EffectId,
+    writeable: bool,
+}
+
+struct SignalNode {
+    val: Box<RefCell<dyn Any>>,
+    subs: RefCell<HashSet<EffectId>>,
+}
+
+struct EffectNode {
+    callback: Box<RefCell<dyn FnMut()>>,
 }
 
 impl<T: 'static> Signal<T> {
-    /// Create a new signal.
+    /// Create a new signal with given value.
     ///
     /// ```
+    /// # use crossd::signal::Signal;
+    /// #
     /// let count = Signal::new(0);
     /// ```
     pub fn new(val: T) -> Self {
-        RUNTIME.with(|rt| rt.signal(val))
+        RUNTIME.with(|rt| {
+            let id = SignalId { val: rt.next_id() };
+
+            rt.signals.borrow_mut().insert(
+                id,
+                SignalNode { val: Box::new(RefCell::new(val)), subs: RefCell::default() },
+            );
+
+            Signal { id, _ty: PhantomData }
+        })
     }
 
-    /// Get the value of this signal.
+    /// Clone the value of the signal.
     ///
     /// ```
     /// # use crossd::signal::Signal;
     /// #
     /// let count = Signal::new(0);
     ///
-    /// assert_eq!(count.get(), 0);
+    /// assert_eq!(count(), 0);
+    ///
+    /// count.set(count() + 1);
+    ///
+    /// assert_eq!(count(), 1);
     /// ```
     ///
     /// ## Panics
     ///
-    /// Panics if the runtime of this signal is dropped.
+    /// (todo)
     pub fn get(self) -> T
     where
         T: Clone,
     {
-        RUNTIME.with(|rt| rt.get(self.id))
+        self.try_get().unwrap()
     }
 
-    /// Run the callback on a reference to a signal.
+    /// Attempts to retreive signal value.
     ///
-    ///  ```
-    /// # use crossd::signal::Signal;
-    /// #
-    /// let count = Signal::new(Point2::new(2, 4));
-    ///
-    ///
-    ///  ```
-    pub fn with<R>(self, f: impl FnOnce(&T) -> R) -> R {
-        RUNTIME.with(|rt| rt.with(self.id, f))
+    /// Returns `None` if (todo).
+    pub fn try_get(self) -> Option<T>
+    where
+        T: Clone,
+    {
+        RUNTIME.with(|rt| {
+            let val = rt
+                .signals
+                .borrow()
+                .get(&self.id)
+                .and_then(|node| {
+                    node.subs.borrow_mut().insert(rt.scope.borrow().current);
+
+                    node.val.try_borrow().ok()
+                })
+                .and_then(|any| any.downcast_ref().cloned());
+
+            rt.run_effects(self.id);
+
+            val
+        })
     }
 
-    /// Get the value of this signal.
+    /// Set the value of the signal.
+    ///
+    /// ## Panics
+    ///
+    /// (todo)
+    pub fn set(self, val: T) {
+        self.try_set(val).unwrap()
+    }
+
+    /// Attempts to set signal value.
+    ///
+    /// Returns `None` if (todo).
+    pub fn try_set(self, val: T) -> Option<()> {
+        RUNTIME.with(|rt| {
+            if rt.scope.borrow().writeable {
+                rt.signals.try_borrow().ok()?.get(&self.id).and_then(|node| {
+                    Some(*node.val.try_borrow_mut().ok()?.downcast_mut()? = val)
+                })
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Set the value of the signal without checking for writeability.
+    pub fn set_untracked(self, val: T) {
+        self.try_set_untracked(val).unwrap()
+    }
+
+    /// Try to set the value of the signal without checking for writeability.
+    pub fn try_set_untracked(self, val: T) -> Option<()> {
+        RUNTIME.with(|rt| {
+            rt.signals.try_borrow().ok()?.get(&self.id).and_then(|node| {
+                Some(*node.val.try_borrow_mut().ok()?.downcast_mut()? = val)
+            })
+        })
+    }
+
+    pub fn with<O>(self, f: impl FnOnce(&T) -> O) -> O {
+        self.try_with(f).unwrap()
+    }
+
+    pub fn try_with<O>(self, f: impl FnOnce(&T) -> O) -> Option<O> {
+        RUNTIME.with(|rt| {
+            rt.signals
+                .try_borrow()
+                .ok()?
+                .get(&self.id)
+                .and_then(|node| node.val.try_borrow().ok()?.downcast_ref().map(f))
+        })
+    }
+
+    pub fn update<O>(self, f: impl FnOnce(&mut T) -> O) -> O {
+        self.try_update(f).unwrap()
+    }
+
+    pub fn try_update<O>(self, f: impl FnOnce(&mut T) -> O) -> Option<O> {
+        RUNTIME.with(|rt| {
+            rt.signals
+                .try_borrow()
+                .ok()?
+                .get(&self.id)
+                .and_then(|node| node.val.try_borrow_mut().ok()?.downcast_mut().map(f))
+        })
+    }
+}
+
+impl<T: Clone + 'static> FnOnce<()> for Signal<T> {
+    type Output = T;
+
+    extern "rust-call" fn call_once(self, _args: ()) -> Self::Output {
+        self.get()
+    }
+}
+
+impl Effect {
+    /// Create a reactive effect.
     ///
     /// ```
-    /// # use crossd::signal::Signal;
+    /// # use crossd::signal::{Effect, Signal};
     /// #
-    /// let count = Signal::new(0);
+    /// let num = Signal::new(1);
     ///
-    /// count.set(3);
-    ///
-    /// assert_eq!(count.get(), 3);
+    /// Effect::new(move || println!("num has changed to {}", num.get()));
     /// ```
     ///
     /// ## Panics
     ///
-    /// Panics if the runtime of this signal is dropped.
-    pub fn set(self, val: T) {
-        RUNTIME.with(|rt| rt.set(self.id, val));
+    /// Panics if the provided function mutates signals.
+    pub fn new(f: impl FnMut() + 'static) -> Self {
+        RUNTIME.with(|rt| {
+            let id = EffectId { val: rt.next_id() };
+
+            rt.effects
+                .borrow_mut()
+                .insert(id, EffectNode { callback: Box::new(RefCell::new(f)) });
+
+            Self { id }
+        })
+    }
+}
+
+impl<T: 'static> Memo<T> {
+    /// ```
+    /// # use crossd::signal::{Memo, Signal};
+    /// #
+    /// // ax^2 + bx + c
+    /// let a = Signal::new(2.0f32);
+    /// let b = Signal::new(3.0f32);
+    /// let c = Signal::new(1.0f32);
+    ///
+    /// let discriminant = Memo::new(move || b().powf(2.0) - 4.0 * a() * c());
+    /// let real_zeros = Memo::new(move || {
+    ///     if discriminant() < 0.0 {
+    ///         0
+    ///     } else if discriminant() == 0.0 {
+    ///         1
+    ///     } else {
+    ///         2
+    ///     }
+    /// });
+    /// ```
+    ///
+    /// ## Panics
+    ///
+    /// Panics if signals are written to in the callback.
+    pub fn new(mut f: impl FnMut() -> T + 'static) -> Self {
+        let signal = Signal::new(None);
+        let effect = Effect::new(move || {
+            signal.set_untracked(Some(f()));
+        });
+
+        Self { signal, effect }
     }
 
-    /// Mutate the value of the signal.
-    pub fn update(self, f: impl FnOnce(&mut T)) {
-        RUNTIME.with(|rt| rt.update(self.id, f));
+    pub fn get(self) -> T
+    where
+        T: Clone,
+    {
+        self.try_get().unwrap()
+    }
+
+    pub fn try_get(self) -> Option<T>
+    where
+        T: Clone,
+    {
+        self.signal.try_get().flatten()
+    }
+}
+
+impl<T: Clone + 'static> FnOnce<()> for Memo<T> {
+    type Output = T;
+
+    extern "rust-call" fn call_once(self, _args: ()) -> Self::Output {
+        self.get()
+    }
+}
+
+impl Runtime {
+    fn new() -> Self {
+        let scope = RefCell::new(Scope { current: EffectId { val: 0 }, writeable: true });
+
+        let signals = RefCell::default();
+        let effects = RefCell::default();
+
+        let next_id = Cell::default();
+
+        Self { scope, signals, effects, next_id }
+    }
+
+    fn next_id(&self) -> u64 {
+        self.next_id.set(self.next_id.get() + 1);
+
+        self.next_id.get()
+    }
+
+    fn run_effects(&self, id: SignalId) {
+        for effect in self.signals.borrow().get(&id).unwrap().subs.borrow().iter() {
+            self.effects.borrow_mut().get(&effect).unwrap().callback.borrow_mut()();
+        }
     }
 }

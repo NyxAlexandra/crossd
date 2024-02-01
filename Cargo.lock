@@ -359,10 +359,9 @@ name = "crossd"
 version = "0.1.0"
 dependencies = [
  "crossd-graphics",
+ "crossd-macros",
  "crossd-math",
  "crossd-scene",
- "indexmap 2.1.0",
- "slotmap",
  "tiny-skia 0.11.3",
 ]
 
@@ -384,6 +383,10 @@ dependencies = [
  "wgpu",
  "winit",
 ]
+
+[[package]]
+name = "crossd-macros"
+version = "0.1.0"
 
 [[package]]
 name = "crossd-math"

@@ -9,9 +9,9 @@ wgpu = ["dep:crossd-graphics"]
 tiny-skia = ["dep:tiny-skia"]
 
 [dependencies]
+crossd-macros.path = "./macros"
+
 crossd-math.workspace = true
 crossd-scene.workspace = true
 crossd-graphics = { workspace = true, optional = true }
 tiny-skia = { version = "0.11.3", optional = true }
-indexmap = "2.1.0"
-slotmap = "1.0.7"
