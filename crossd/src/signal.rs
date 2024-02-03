@@ -62,7 +62,7 @@ struct Runtime {
 }
 
 struct Scope {
-    current: EffectId,
+    current: Option<EffectId>,
     writeable: bool,
 }
 
@@ -133,7 +133,9 @@ impl<T: 'static> Signal<T> {
                 .borrow()
                 .get(&self.id)
                 .and_then(|node| {
-                    node.subs.borrow_mut().insert(rt.scope.borrow().current);
+                    if let Some(id) = rt.scope.borrow().current {
+                        node.subs.try_borrow_mut().ok()?.insert(id);
+                    }
 
                     node.val.try_borrow().ok()
                 })
@@ -305,7 +307,7 @@ impl<T: Clone + 'static> FnOnce<()> for Memo<T> {
 
 impl Runtime {
     fn new() -> Self {
-        let scope = RefCell::new(Scope { current: EffectId { val: 0 }, writeable: true });
+        let scope = RefCell::new(Scope { current: None, writeable: true });
 
         let signals = RefCell::default();
         let effects = RefCell::default();
