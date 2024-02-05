@@ -9,7 +9,8 @@ wgpu = ["dep:crossd-graphics"]
 tiny-skia = ["dep:tiny-skia"]
 
 [dependencies]
+tiny-skia = { version = "0.11.3", optional = true }
+
 crossd-math.workspace = true
 crossd-scene.workspace = true
 crossd-graphics = { workspace = true, optional = true }
-tiny-skia = { version = "0.11.3", optional = true }
