@@ -1,5 +1,7 @@
+use crossd_math::Size2;
+
 use crate::layout::Length;
-use crate::view::{View, ViewCx, ViewSeq, ViewState};
+use crate::view::{LayoutCx, PaintCx, View, ViewCx, ViewSeq, ViewState};
 use crate::Event;
 
 pub struct Column<D, S>
@@ -35,7 +37,7 @@ where
     S: ViewSeq<D>,
 {
     fn init(&self, cx: &mut ViewCx) -> ViewState<D> {
-        todo!()
+        ViewState::new(())
     }
 
     fn reinit(&self, cx: &mut ViewCx, state: &mut ViewState<D>) {
@@ -46,9 +48,17 @@ where
         &mut self,
         cx: &mut ViewCx,
         state: &mut ViewState<D>,
-        event: Event,
         data: &mut D,
-    ) -> Option<()> {
+        event: Event,
+    ) {
+        todo!()
+    }
+
+    fn layout(&mut self, cx: &mut LayoutCx) -> Size2 {
+        todo!()
+    }
+
+    fn paint(&mut self, cx: &mut PaintCx) {
         todo!()
     }
 }

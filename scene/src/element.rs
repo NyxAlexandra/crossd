@@ -12,6 +12,7 @@ pub enum Element {
     Stroke { path: Path, stroke: Stroke },
     Image { point: Point2, image: Image },
     Text { point: Point2, text: Text },
+    Editor { point: Point2, editor: Editor },
     Group { trans: Trans2, members: Vec<Element> },
 }
 

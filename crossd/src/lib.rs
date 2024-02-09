@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use view::View;
+
 pub mod graphics;
 pub mod layout;
 pub mod view;

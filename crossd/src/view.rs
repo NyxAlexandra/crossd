@@ -14,20 +14,13 @@ pub trait View<D> {
         &mut self,
         cx: &mut ViewCx,
         state: &mut ViewState<D>,
-        event: Event,
         data: &mut D,
+        event: Event,
     );
 
-    fn layout(&mut self, cx: &mut ViewCx) -> Size2;
+    fn layout(&mut self, cx: &mut LayoutCx) -> Size2;
 
-    fn update(&mut self, cx: &mut ViewCx, state: &mut ViewState<D>);
-}
-
-pub struct ViewCx {}
-
-pub struct ViewState<D> {
-    state: Box<dyn Any>,
-    _data: PhantomData<D>,
+    fn paint(&mut self, cx: &mut PaintCx);
 }
 
 pub trait ViewSeq<D> {
@@ -35,6 +28,17 @@ pub trait ViewSeq<D> {
 
     fn for_each_mut(&mut self, f: &mut dyn FnMut(&mut dyn View<D>));
 }
+
+pub struct ViewState<D> {
+    state: Box<dyn Any>,
+    _data: PhantomData<D>,
+}
+
+pub struct ViewCx {}
+
+pub struct LayoutCx {}
+
+pub struct PaintCx {}
 
 impl<D> ViewState<D> {
     pub fn new<T: 'static>(state: T) -> Self {
@@ -51,21 +55,26 @@ impl<D> ViewState<D> {
 }
 
 impl<D> View<D> for () {
-    fn init(&self, _cx: &mut ViewCx) -> ViewState<D> {
+    fn init(&self, cx: &mut ViewCx) -> ViewState<D> {
         ViewState::new(())
     }
 
-    fn reinit(&self, _cx: &mut ViewCx, _state: &mut ViewState<D>) {}
+    fn reinit(&self, cx: &mut ViewCx, state: &mut ViewState<D>) {}
 
     fn event(
         &mut self,
-        _cx: &mut ViewCx,
-        _state: &mut ViewState<D>,
-        _event: Event,
-        _data: &mut D,
-    ) -> Option<()> {
-        None
+        cx: &mut ViewCx,
+        state: &mut ViewState<D>,
+        data: &mut D,
+        event: Event,
+    ) {
     }
+
+    fn layout(&mut self, cx: &mut LayoutCx) -> Size2 {
+        Size2::ZERO
+    }
+
+    fn paint(&mut self, cx: &mut PaintCx) {}
 }
 
 impl<D> ViewSeq<D> for () {

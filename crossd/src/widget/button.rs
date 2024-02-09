@@ -1,13 +1,15 @@
 use crossd_math::Size2;
 
+use super::text::Text;
 use crate::view::{LayoutCx, PaintCx, View, ViewCx, ViewState};
 use crate::Event;
 
-pub struct Text<D> {
-    data: ViewState<D>,
+pub struct Button<D> {
+    text: Text<D>,
+    state: ViewState<D>,
 }
 
-impl<D> View<D> for Text<D> {
+impl<D> View<D> for Button<D> {
     fn init(&self, cx: &mut ViewCx) -> ViewState<D> {
         todo!()
     }
