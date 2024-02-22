@@ -5,13 +5,7 @@ authors.workspace = true
 license.workspace = true
 version.workspace = true
 edition.workspace = true
-
 repository.workspace = true
 
-[features]
-serde = ["dep:serde"]
-
 [dependencies]
-crossd-math.workspace = true
-bytemuck.workspace = true
-serde = { workspace = true, optional = true }
+slotmap.workspace = true

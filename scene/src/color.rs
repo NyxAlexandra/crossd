@@ -1,141 +1,109 @@
-//! Type for representing colors.
-
 use std::mem;
 
-use bytemuck::{Pod, Zeroable};
-use crossd_math::Vec4;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use crate::Vec4;
 
-/// An RGBA color.
-///
-/// Values are in the range `[0.0, 1.0]`.
-///
-/// Is equivalent to `[f32; 4]` or WGSL `vec4<f32>`.
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Pod, Zeroable)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Color {
-    /// The red component.
     pub r: f32,
-    /// The green component.
     pub g: f32,
-    /// The blue component.
     pub b: f32,
-    /// The alpha component.
     pub a: f32,
 }
 
 impl Color {
-    pub const BLACK: Self = Self::rgb(0, 0, 0);
-    pub const BLUE: Self = Self::rgb(255, 0, 255);
-    pub const GREEN: Self = Self::rgb(0, 255, 0);
-    pub const RED: Self = Self::rgb(255, 0, 0);
-    pub const WHITE: Self = Self::rgb(255, 255, 255);
+    pub const BLACK: Self = Self::rgb(0.0, 0.0, 0.0);
+    pub const BLUE: Self = Self::rgb(0.0, 0.0, 1.0);
+    pub const GREEN: Self = Self::rgb(0.0, 1.0, 0.0);
+    pub const RED: Self = Self::rgb(1.0, 0.0, 0.0);
+    pub const TRANSPARENT: Self = Self::rgba(0.0, 0.0, 0.0, 0.0);
+    pub const WHITE: Self = Self::rgb(1.0, 1.0, 1.0);
 
-    /// Color from RGB components with 255 alpha.
-    ///
-    /// ```
-    /// # use crossd_graphics::color::Color;
-    /// #
-    /// let red = Color::rgb(255, 0, 0);
-    ///
-    /// assert_eq!(red, Color::RED);
-    /// assert_eq!(red, Color::rgba(255, 0, 0, 255));
-    /// ```
-    #[inline]
-    #[must_use]
-    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self::rgba(r, g, b, 255)
+    pub const fn rgb(r: f32, g: f32, b: f32) -> Self {
+        Self::rgba(r, g, b, 1.0)
     }
 
-    /// Color from RGB components and alpha.
-    ///
-    /// ```
-    /// # use crossd_graphics::color::Color;
-    /// let red = Color::new(255, 0, 0, 255);
-    ///
-    /// assert_eq!(red, Color::RED);
-    /// assert_eq!(red, Color::new(0xff, 0x0, 0x0, 0xff));
-    /// ```
-    #[must_use]
-    pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-        let r = r as f32 / 255.0;
-        let g = g as f32 / 255.0;
-        let b = b as f32 / 255.0;
-        let a = a as f32 / 255.0;
-
+    pub const fn rgba(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
     }
 
-    #[must_use]
-    pub const fn to_rgb(self) -> [u8; 3] {
-        let Self { r, g, b, .. } = self;
-
-        [(r * 255.0) as _, (g * 255.0) as _, (b * 255.0) as _]
+    pub const fn gray(v: f32) -> Self {
+        Self::rgba(v, v, v, 1.0)
     }
+}
 
-    #[must_use]
-    pub const fn from_rgb(rgb: [u8; 3]) -> Self {
-        let [r, g, b] = rgb;
-
-        Self::rgb(r, g, b)
+impl From<Vec4<f32>> for Color {
+    fn from(Vec4 { x, y, z, w }: Vec4<f32>) -> Self {
+        Self::rgba(x, y, z, w)
     }
+}
 
-    #[must_use]
-    pub const fn to_rgba(self) -> [u8; 4] {
-        let Self { r, g, b, a } = self;
-
-        [(r * 255.0) as _, (g * 255.0) as _, (b * 255.0) as _, (a * 255.0) as _]
+impl From<Color> for Vec4<f32> {
+    fn from(Color { r, g, b, a }: Color) -> Self {
+        Self::new(r, g, b, a)
     }
+}
 
-    #[must_use]
-    pub const fn from_rgba(rgba: [u8; 4]) -> Self {
-        let [r, g, b, a] = rgba;
+impl From<[f32; 4]> for Color {
+    fn from([r, g, b, a]: [f32; 4]) -> Self {
+        Self { r, g, b, a }
+    }
+}
 
+impl From<Color> for [f32; 4] {
+    fn from(Color { r, g, b, a }: Color) -> Self {
+        [r, g, b, a]
+    }
+}
+
+impl From<(f32, f32, f32, f32)> for Color {
+    fn from((r, g, b, a): (f32, f32, f32, f32)) -> Self {
         Self::rgba(r, g, b, a)
     }
-
-    /// Create a new color from a `u32`, usually a hex literal (format
-    /// `0xAARRGGBB`).
-    #[must_use]
-    pub const fn from_hex(hex: u32) -> Self {
-        Self::from_rgba(unsafe { mem::transmute(hex) })
-    }
-
-    /// Convert to a [`Vec4`].
-    #[must_use]
-    pub const fn to_vec4(self) -> Vec4 {
-        unsafe { mem::transmute(self) }
-    }
-
-    /// Convert from a [`Vec4`].
-    #[must_use]
-    pub const fn from_vec4(vec4: Vec4) -> Self {
-        unsafe { mem::transmute(vec4) }
-    }
 }
 
-impl From<[u8; 3]> for Color {
-    fn from(rgb: [u8; 3]) -> Self {
-        Self::from_rgb(rgb)
-    }
-}
-
-impl From<Color> for [u8; 3] {
-    fn from(color: Color) -> Self {
-        color.to_rgb()
+impl From<Color> for (f32, f32, f32, f32) {
+    fn from(Color { r, g, b, a }: Color) -> Self {
+        (r, g, b, a)
     }
 }
 
 impl From<[u8; 4]> for Color {
     fn from(rgba: [u8; 4]) -> Self {
-        Self::from_rgba(rgba)
+        Self::from(rgba.map(|u8| u8 as f32 / 255.0))
     }
 }
 
 impl From<Color> for [u8; 4] {
+    fn from(Color { r, g, b, a }: Color) -> Self {
+        [r, g, b, a].map(|f32| (f32.clamp(0.0, 1.0) * 255.0) as u8)
+    }
+}
+
+impl From<(u8, u8, u8, u8)> for Color {
+    fn from((r, g, b, a): (u8, u8, u8, u8)) -> Self {
+        Self::from([r, g, b, a])
+    }
+}
+
+impl From<Color> for (u8, u8, u8, u8) {
     fn from(color: Color) -> Self {
-        color.to_rgba()
+        let [r, g, b, a]: [u8; 4] = color.into();
+
+        (r, g, b, a)
+    }
+}
+
+impl From<u32> for Color {
+    fn from(hex: u32) -> Self {
+        let bytes: [u8; 4] = unsafe { mem::transmute(hex) };
+
+        Self::from(bytes)
+    }
+}
+
+impl From<Color> for u32 {
+    fn from(color: Color) -> Self {
+        Self::from_be_bytes(color.into())
     }
 }

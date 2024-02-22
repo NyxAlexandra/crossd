@@ -1,5 +1,17 @@
+[package]
+name = "crossd"
+
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+crossd-core.workspace = true
+
 [workspace]
-members = ["math", "graphics", "crossd"]
+members = ["scene", "core"]
 resolver = "2"
 
 [workspace.package]
@@ -7,19 +19,18 @@ authors = ["Alexandra Reaves <nyxalexandra@proton.me>"]
 license = "MIT OR Apache-2.0"
 version = "0.1.0"
 edition = "2021"
-
 repository = "https://github.com/NyxAlexandra/crossd"
 
 [workspace.dependencies]
-crossd-math = { path = "./math" }
 crossd-scene = { path = "./scene" }
-crossd-graphics = { path = "./graphics" }
+crossd-core = { path = "./core" }
 
 bitflags = "2.4"
 bytemuck = { version = "1.14.0", features = ["derive"] }
 serde = { version = "1.0.189", features = ["rc"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3"
+slotmap = "1.0"
 
 [profile.release.build-override]
 opt-level = 3
