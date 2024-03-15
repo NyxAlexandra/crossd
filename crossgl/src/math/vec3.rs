@@ -1,4 +1,4 @@
-use crate::Vec3;
+use crate::math::Vec3;
 
 impl<T> Vec3<T> {
     pub const fn new(x: T, y: T, z: T) -> Self {

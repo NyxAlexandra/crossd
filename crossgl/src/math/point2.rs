@@ -1,8 +1,7 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use super::{Point2, Vec2};
+use super::{Point2, Size2, Vec2};
 use crate::num::{Max, Min, NegOne, One, Zero};
-use crate::Size2;
 
 impl<T> Point2<T> {
     pub const fn new(x: T, y: T) -> Self {
@@ -18,6 +17,10 @@ impl<T> Point2<T> {
 
     pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Point2<U> {
         Point2::new(f(self.x), f(self.y))
+    }
+
+    pub const fn to_array(self) -> [T; 2] {
+        unsafe { transmute!(for<T> Point2<T>, [T; 2], self) }
     }
 }
 

@@ -1,5 +1,6 @@
 use super::Size2;
-use crate::Zero;
+use crate::math::{Point2, Rect};
+use crate::num::Zero;
 
 impl<T> Size2<T> {
     pub const fn new(w: T, h: T) -> Self {
@@ -20,4 +21,16 @@ impl<T> Size2<T> {
 
 impl<T: Zero> Size2<T> {
     pub const ZERO: Self = Self::splat(T::ZERO);
+}
+
+impl<T> From<Rect<T>> for Size2<T> {
+    fn from(Rect { size, .. }: Rect<T>) -> Self {
+        size
+    }
+}
+
+impl<T: Zero> From<Size2<T>> for Rect<T> {
+    fn from(size: Size2<T>) -> Self {
+        Rect::new(Point2::ZERO, size)
+    }
 }

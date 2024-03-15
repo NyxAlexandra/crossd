@@ -2,18 +2,18 @@
 
 use std::slice;
 
-use crate::math::Point2;
-use crate::Zero;
+use crate::math::{Point2, Rect};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub struct Path<T = f32> {
-    points: Box<[Point2<T>]>,
+pub struct Path {
+    points: Box<[Point2<f32>]>,
     verbs: Box<[PathVerb]>,
+    bounds: Rect<f32>,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub struct PathBuilder<T> {
-    points: Vec<Point2<T>>,
+pub struct PathBuilder {
+    points: Vec<Point2<f32>>,
     verbs: Vec<PathVerb>,
 
     move_required: bool,
@@ -29,29 +29,47 @@ pub enum PathVerb {
     Line,
     Quad,
     Cubic,
+    Close,
 }
 
 /// The components of a [`Path`].
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub enum PathElement<T> {
-    MoveTo(Point2<T>),
-    LineTo(Point2<T>),
-    QuadTo { p: Point2<T>, c: Point2<T> },
-    CubicTo { p: Point2<T>, c1: Point2<T>, c2: Point2<T> },
+pub enum PathElement {
+    MoveTo(Point2<f32>),
+    LineTo(Point2<f32>),
+    QuadTo { p: Point2<f32>, c: Point2<f32> },
+    CubicTo { p: Point2<f32>, c1: Point2<f32>, c2: Point2<f32> },
+    Close,
 }
 
 #[derive(Debug, Clone)]
-pub struct PathElements<'a, T> {
-    points: slice::Iter<'a, Point2<T>>,
+pub struct PathElements<'a> {
+    points: slice::Iter<'a, Point2<f32>>,
     verbs: slice::Iter<'a, PathVerb>,
 }
 
-impl<T: Zero> Path<T> {
-    pub fn builder() -> PathBuilder<T> {
+impl Path {
+    pub fn new(elements: impl IntoIterator<Item = PathElement>) -> Option<Self> {
+        let mut builder = Self::builder();
+
+        for elem in elements {
+            match elem {
+                PathElement::MoveTo(p) => builder.move_to(p),
+                PathElement::LineTo(p) => builder.line_to(p),
+                PathElement::QuadTo { p, c } => builder.quad_to(p, c),
+                PathElement::CubicTo { p, c1, c2 } => builder.cubic_to(p, c1, c2),
+                PathElement::Close => builder.close(),
+            }
+        }
+
+        builder.build()
+    }
+
+    pub fn builder() -> PathBuilder {
         PathBuilder::new()
     }
 
-    pub fn points(&self) -> &[Point2<T>] {
+    pub fn points(&self) -> &[Point2<f32>] {
         &self.points
     }
 
@@ -59,16 +77,20 @@ impl<T: Zero> Path<T> {
         &self.verbs
     }
 
-    pub fn elements(&self) -> PathElements<T> {
+    pub fn bounds(&self) -> Rect<f32> {
+        self.bounds
+    }
+
+    pub fn elements(&self) -> PathElements {
         PathElements { points: self.points.iter(), verbs: self.verbs.iter() }
     }
 
-    pub fn into_builder(self) -> PathBuilder<T> {
+    pub fn into_builder(self) -> PathBuilder {
         PathBuilder::from_path(self)
     }
 }
 
-impl<T: Zero> PathBuilder<T> {
+impl PathBuilder {
     pub fn new() -> Self {
         Self {
             points: Vec::new(),
@@ -78,8 +100,8 @@ impl<T: Zero> PathBuilder<T> {
         }
     }
 
-    pub fn from_path(path: Path<T>) -> Self {
-        let Path { points, verbs } = path;
+    pub fn from_path(path: Path) -> Self {
+        let Path { points, verbs, .. } = path;
 
         PathBuilder {
             points: points.into(),
@@ -89,21 +111,21 @@ impl<T: Zero> PathBuilder<T> {
         }
     }
 
-    pub fn move_to(&mut self, point: impl Into<Point2<T>>) {
+    pub fn move_to(&mut self, point: impl Into<Point2<f32>>) {
         self.move_required = false;
         self.last_point = Some(self.points.len());
 
         self.points.push(point.into());
     }
 
-    pub fn line_to(&mut self, point: impl Into<Point2<T>>) {
+    pub fn line_to(&mut self, point: impl Into<Point2<f32>>) {
         self.move_if_required();
 
         self.verbs.push(PathVerb::Line);
         self.points.push(point.into());
     }
 
-    pub fn quad_to(&mut self, p: impl Into<Point2<T>>, c: impl Into<Point2<T>>) {
+    pub fn quad_to(&mut self, p: impl Into<Point2<f32>>, c: impl Into<Point2<f32>>) {
         self.move_if_required();
 
         self.verbs.push(PathVerb::Quad);
@@ -112,14 +134,20 @@ impl<T: Zero> PathBuilder<T> {
 
     pub fn cubic_to(
         &mut self,
-        p: impl Into<Point2<T>>,
-        c1: impl Into<Point2<T>>,
-        c2: impl Into<Point2<T>>,
+        p: impl Into<Point2<f32>>,
+        c1: impl Into<Point2<f32>>,
+        c2: impl Into<Point2<f32>>,
     ) {
         self.move_if_required();
 
         self.verbs.push(PathVerb::Quad);
         self.points.extend([p.into(), c1.into(), c2.into()]);
+    }
+
+    pub fn close(&mut self) {
+        if !self.verbs.is_empty() {
+            self.verbs.push(PathVerb::Close);
+        }
     }
 
     pub fn clear(&mut self) {
@@ -130,12 +158,17 @@ impl<T: Zero> PathBuilder<T> {
         self.last_point = None;
     }
 
-    pub fn build(self) -> Option<Path<T>> {
+    pub fn build(mut self) -> Option<Path> {
         if self.verbs.is_empty() || self.verbs.len() == 1 {
             return None;
         }
+        if self.verbs.last() != Some(&PathVerb::Close) {
+            self.close();
+        }
 
-        Some(Path { points: self.points.into(), verbs: self.verbs.into() })
+        let bounds = Rect::from_iter(&self.points);
+
+        Some(Path { points: self.points.into(), verbs: self.verbs.into(), bounds })
     }
 
     fn move_if_required(&mut self) {
@@ -149,8 +182,8 @@ impl<T: Zero> PathBuilder<T> {
     }
 }
 
-impl<'a, T: Zero> Iterator for PathElements<'a, T> {
-    type Item = PathElement<T>;
+impl<'a> Iterator for PathElements<'a> {
+    type Item = PathElement;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut next =
@@ -161,13 +194,14 @@ impl<'a, T: Zero> Iterator for PathElements<'a, T> {
             PathVerb::Line => PathElement::LineTo(next()),
             PathVerb::Quad => PathElement::QuadTo { p: next(), c: next() },
             PathVerb::Cubic => PathElement::CubicTo { p: next(), c1: next(), c2: next() },
+            PathVerb::Close => PathElement::Close,
         })
     }
 }
 
-impl<'a, T: Zero> IntoIterator for &'a Path<T> {
-    type IntoIter = PathElements<'a, T>;
-    type Item = PathElement<T>;
+impl<'a> IntoIterator for &'a Path {
+    type IntoIter = PathElements<'a>;
+    type Item = PathElement;
 
     fn into_iter(self) -> Self::IntoIter {
         {

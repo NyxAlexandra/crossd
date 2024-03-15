@@ -1,7 +1,5 @@
-use std::ops::{Add, Sub};
-
 use super::{Point2, Rect, Size2};
-use crate::{Path, Zero};
+use crate::scene::Path;
 
 impl<T> Rect<T> {
     pub const fn new(point: Point2<T>, size: Size2<T>) -> Self {
@@ -18,14 +16,11 @@ impl<T> Rect<T> {
     }
 }
 
-impl<T> From<Rect<T>> for Path<T>
-where
-    T: Zero + Add<Output = T> + Sub<Output = T>,
-{
-    fn from(Rect { point, size }: Rect<T>) -> Self {
-        let ne = point + (size.w, T::ZERO);
-        let se = ne - (T::ZERO, size.h);
-        let sw = se - (size.w, T::ZERO);
+impl From<Rect<f32>> for Path {
+    fn from(Rect { point, size }: Rect<f32>) -> Self {
+        let ne = point + (size.w, 0.0);
+        let se = ne - (0.0, size.h);
+        let sw = se - (size.w, 0.0);
 
         let mut path = Path::builder();
 
@@ -36,5 +31,17 @@ where
         path.line_to(point);
 
         path.build().expect("rectangles are valid paths")
+    }
+}
+
+impl<T> FromIterator<Point2<T>> for Rect<T> {
+    fn from_iter<I: IntoIterator<Item = Point2<T>>>(iter: I) -> Self {
+        todo!()
+    }
+}
+
+impl<'a, T> FromIterator<&'a Point2<T>> for Rect<T> {
+    fn from_iter<I: IntoIterator<Item = &'a Point2<T>>>(iter: I) -> Self {
+        todo!()
     }
 }

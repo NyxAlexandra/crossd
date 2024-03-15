@@ -1,18 +1,4 @@
-use crossd::scene::{Rect, Scene};
-use crossd_core::scene::{Color, Fill, FillRule, Point2, Size2, Source};
-
-fn main() {
-    let mut scene = Scene::new();
-
-    scene.fill(
-        Rect::new(Point2::ZERO, Size2::new(200.0, 100.0)),
-        &Fill {
-            source: Source::Color(Color::BLUE),
-            rule: FillRule::EvenOdd,
-            ..Default::default()
-        },
-    );
-}
+fn main() {}
 
 // use crossd::widget::column::Column;
 

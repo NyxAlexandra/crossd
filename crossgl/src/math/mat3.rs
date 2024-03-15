@@ -1,4 +1,5 @@
-use crate::{Mat3, One, Vec2, Vec3, Zero};
+use super::{Mat3, Vec2, Vec3};
+use crate::num::{One, Zero};
 
 impl<T> Mat3<T> {
     /// Create a matrix from it's columns.

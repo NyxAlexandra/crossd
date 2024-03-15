@@ -8,10 +8,10 @@ edition.workspace = true
 repository.workspace = true
 
 [dependencies]
-crossd-core.workspace = true
+crossgl.workspace = true
 
 [workspace]
-members = ["scene", "core"]
+members = ["crossgl"]
 resolver = "2"
 
 [workspace.package]
@@ -22,8 +22,7 @@ edition = "2021"
 repository = "https://github.com/NyxAlexandra/crossd"
 
 [workspace.dependencies]
-crossd-scene = { path = "./scene" }
-crossd-core = { path = "./core" }
+crossgl = { path = "./crossgl" }
 
 bitflags = "2.4"
 bytemuck = { version = "1.14.0", features = ["derive"] }

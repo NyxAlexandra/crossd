@@ -1,19 +1,9 @@
-use std::rc::Rc;
+use std::borrow::Cow;
 
-use text::*;
+use wgpu::TextureFormat;
 
-use crate::{Color, Mat3, Path, Point2, Scene, Size2};
-
-mod text;
-
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Element<T> {
-    Fill { path: Path<T>, fill: Fill },
-    Stroke { path: Path<T>, stroke: Stroke },
-    Image { point: Point2<T>, image: Image },
-    Text { point: Point2<T>, text: Text },
-    Group { trans: Mat3<T>, scene: Scene<T> },
-}
+use crate::color::Color;
+use crate::math::Size2;
 
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd)]
 pub struct Fill {
@@ -24,9 +14,8 @@ pub struct Fill {
 
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd)]
 pub struct Stroke {
-    pub source: Source,
-    pub rule: FillRule,
-    pub blend: Blend,
+    pub fill: Fill,
+    pub width: f32,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -38,6 +27,7 @@ pub enum Source {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Gradient {
     Linear { start: Color, end: Color },
+    Radial { inner: Color, outer: Color },
 }
 
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd)]
@@ -66,31 +56,16 @@ pub enum Blend {
     DstOver,
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+/// Texture data on the CPU.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Image {
-    pub buffer: ImageBuf,
-    pub trans: Mat3<f32>,
-}
-
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub struct ImageBuf {
-    bytes: Rc<[u8]>,
-    size: Size2<u32>,
+    pub data: Cow<'static, [u8]>,
+    pub size: Size2<u32>,
+    pub format: TextureFormat,
 }
 
 impl Default for Source {
     fn default() -> Self {
         Self::Color(Color::TRANSPARENT)
-    }
-}
-
-impl ImageBuf {
-    pub fn new(bytes: impl AsRef<[u8]>, size: Size2<u32>) -> Option<Self> {
-        todo!()
-    }
-
-    #[must_use]
-    pub fn resize(&mut self, size: Size2<u32>) -> Option<()> {
-        todo!()
     }
 }

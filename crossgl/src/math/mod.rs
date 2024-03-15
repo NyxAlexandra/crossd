@@ -3,6 +3,7 @@ mod mat3;
 mod point2;
 mod rect;
 mod size2;
+mod triangle;
 mod vec2;
 mod vec3;
 mod vec4;
@@ -83,3 +84,24 @@ pub struct Circle<T> {
     pub point: Point2<T>,
     pub radius: T,
 }
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Triangle<T>(pub Point2<T>, pub Point2<T>, pub Point2<T>);
+
+macro_rules! impl_bytemuck {
+    ($($t:ident)*) => {
+        $(
+            unsafe impl<T> ::bytemuck::Pod for $t<T>
+            where
+                T: ::bytemuck::Pod,
+            {}
+            unsafe impl<T> ::bytemuck::Zeroable for $t<T>
+            where
+                T: ::bytemuck::Zeroable,
+            {}
+        )*
+    };
+}
+
+impl_bytemuck!(Vec2 Vec3 Vec4 Mat3 Mat4 Point2 Point3 Size2 Rect Circle Triangle);

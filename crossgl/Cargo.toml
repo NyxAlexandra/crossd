@@ -1,5 +1,5 @@
 [package]
-name = "crossd-core"
+name = "crossgl"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,6 @@ edition = "2021"
 default = []
 
 [dependencies]
-crossd-scene.workspace = true
+bytemuck.workspace = true
+thiserror = "1.0.58"
+wgpu = "0.19.3"
